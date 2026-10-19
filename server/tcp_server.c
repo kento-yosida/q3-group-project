@@ -49,63 +49,11 @@ static int write_all(int fd, const char *buf, size_t length)
     return 0;
 }
 
-// UPPER コマンドの変換処理
-// text: 入力文字列, dest: 出力用バッファ, dest_size: バッファのサイズ
-void protocol_upper(const char *text, char *dest, size_t dest_size) {
-    size_t i = 0;
-    while (text[i] != '\0' && i < dest_size - 1) {
-        char c = text[i];
-        // a-z の範囲の場合のみ大文字に変換 (-32)
-        if (c >= 'a' && c <= 'z') {
-            dest[i] = c - 32;
-        } else {
-            dest[i] = c;
-        }
-        i++;
-    }
-    dest[i] = '\0'; // 終端文字
-}
-
-// リクエストを解析して応答を作成する関数
-void handle_request(const char *request, char *response, size_t response_size) {
-    char command[32];
-    char text[1024];
-
-    // 改行文字などを取り除く（簡易的）
-    char temp_req[1024];
-    strncpy(temp_req, request, sizeof(temp_req) - 1);
-    temp_req[strcspn(temp_req, "\r\n")] = '\0';
-
-    // 最初の空白でコマンドとテキストに分割する
-    // 例: "UPPER hello world" -> command = "UPPER", text = "hello world"
-    int parsed = sscanf(temp_req, "%31s %[^\t\n]", command, text);
-
-    if (strcmp(command, "UPPER") == 0) {
-        // 引数（text）が存在するかチェック
-        if (parsed < 2) {
-            snprintf(response, response_size, "ERROR invalid-argument\n");
-            return;
-        }
-
-        // protocol_upper 関数を使って変換処理を行う
-        char converted_text[1024];
-        protocol_upper(text, converted_text, sizeof(converted_text));
-
-        // 応答を作成 (OK <変換後のテキスト>\n)
-        snprintf(response, response_size, "OK %s\n", converted_text);
-    } 
-    else {
-        // 未知のコマンドの場合のエラー処理
-        snprintf(response, response_size, "ERROR unknown-command\n");
-    }
-}
-
 int main(void)
 {
     int listen_fd = -1, client_fd = -1, status = EXIT_FAILURE;
     struct sockaddr_in addr = {0};
     char buf[1024];
-
     ssize_t n;
     signal(SIGPIPE, SIG_IGN);
 
@@ -138,18 +86,19 @@ int main(void)
     while ((n = read_line(client_fd, buf, sizeof(buf))) > 0) {
         printf("client -> %s", buf); fflush(stdout);
         /* ECHO変更箇所: replace the following two lines in class. */
-        // 応答を格納するバッファを用意
-        char response[1024];
-        
-        // リクエストを解析・処理してレスポンス文字列を作成
-        handle_request(buf, response, sizeof(response));
-        
-        // クライアントへ応答を送信
-        if (write_all(client_fd, response, strlen(response)) < 0) break;
+        int a, b;
+char response[128];
+
+if (sscanf(buf, "ADD %d %d", &a, &b) == 2) {
+    snprintf(response, sizeof(response), "OK %d\n", a + b);
+} else {
+    snprintf(response, sizeof(response), "ERROR invalid-argument\n");
+}
+
+if (write_all(client_fd, response, strlen(response)) < 0) break;
     }
     if (n < 0) { perror("read_line"); status = EXIT_FAILURE; }
     puts("connection closed; restart server for the next client");
-
 
 done:
     /* STEP 6: close each descriptor separately */
