@@ -7,7 +7,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-/* TCP is a byte stream. Our protocol uses one newline-terminated line. */
+/* TCP is a byte stream. Our protocol uses one newline-terminated line.
+   One-byte reads keep this helper easy to inspect, not optimized. */
 static ssize_t read_line(int fd, char *buf, size_t capacity)
 {
     size_t used = 0;
@@ -31,6 +32,7 @@ static ssize_t read_line(int fd, char *buf, size_t capacity)
     return -1;
 }
 
+/* write() can send fewer bytes than requested. */
 static int write_all(int fd, const char *buf, size_t length)
 {
     size_t sent = 0;
@@ -53,64 +55,47 @@ int main(int argc, char **argv)
     struct sockaddr_in addr = {0};
     char buf[1024], *end;
     ssize_t n;
-
-    /* 使い方: ./client IP PORT A B */
-    if (argc != 5) {
-        fprintf(stderr, "usage: %s IPv4 PORT A B\n", argv[0]);
-        return EXIT_FAILURE;
+    if (argc != 3) {
+        fprintf(stderr, "usage: %s IPv4 PORT\n", argv[0]); return EXIT_FAILURE;
     }
-
     errno = 0;
     long port = strtol(argv[2], &end, 10);
     if (errno || *end || end == argv[2] || port < 1 || port > 65535) {
-        fprintf(stderr, "invalid port\n");
-        return EXIT_FAILURE;
+        fprintf(stderr, "invalid port\n"); return EXIT_FAILURE;
     }
-
     addr.sin_family = AF_INET;
     addr.sin_port = htons((unsigned short)port);
     if (inet_pton(AF_INET, argv[1], &addr.sin_addr) != 1) {
-        fprintf(stderr, "invalid IPv4 address\n");
-        return EXIT_FAILURE;
+        fprintf(stderr, "invalid IPv4 address\n"); return EXIT_FAILURE;
     }
-
     signal(SIGPIPE, SIG_IGN);
-
     /* STEP 1: socket */
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd < 0) { perror("socket"); goto done; }
-
-    /* STEP 2: connect */
+    /* STEP 2: connect to the SERVER address and port */
     if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("connect");
-        goto done;
+        perror("connect"); goto done;
     }
-
-    /* STEP 3: ADDコマンドを作成して送信 */
-    int a = atoi(argv[3]);
-    int b = atoi(argv[4]);
-    snprintf(buf, sizeof(buf), "ADD %d %d\n", a, b);
-
-    if (write_all(fd, buf, strlen(buf)) < 0) {
-        goto done;
-    }
-
-    /* STEP 4: サーバーからのレスポンスを受信して表示 */
-    n = read_line(fd, buf, sizeof(buf));
-    if (n < 0) {
-        perror("read_line");
-        goto done;
-    }
-    if (n == 0) {
-        puts("server closed connection");
-        goto done;
-    }
-
-    printf("server -> %s", buf);
+    puts("connected; type a short line, Enter to send, Ctrl+D to quit");
     status = EXIT_SUCCESS;
-
+    for (;;) {
+        printf("client > "); fflush(stdout);
+        if (!fgets(buf, sizeof(buf), stdin)) break;
+        if (!strchr(buf, '\n')) {
+            int ch;
+            while ((ch = getchar()) != '\n' && ch != EOF) {}
+            fprintf(stderr, "use a newline-terminated line under 1023 bytes\n");
+            continue;
+        }
+        /* STEP 3: write/read on the same connected socket */
+        if (write_all(fd, buf, strlen(buf)) < 0) { status = EXIT_FAILURE; break; }
+        n = read_line(fd, buf, sizeof(buf));
+        if (n < 0) { perror("read_line"); status = EXIT_FAILURE; break; }
+        if (n == 0) { puts("server closed connection"); break; }
+        printf("server -> %s", buf);
+    }
 done:
-    /* STEP 5: close */
+    /* STEP 4: close */
     if (fd >= 0) close(fd);
     return status;
 }
