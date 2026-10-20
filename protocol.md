@@ -1,40 +1,121 @@
-# Protocol
-## Overview
-文字列の変換（大文字化・小文字化・長さ確認）および簡易計算（加算・減算・乗算）を行う。
-Client は Request を作成し、Server はそれを解析して Response を返す。
-## Connection
-TCP port: 5000 / UTF-8 / 1行1request / LF終端
-1 接続で複数request可。1requestに1responseを返す。
-client のEOFで切断。1行はLF込み1023 bytes以下。
-上限超過時は接続を閉じる。
-## Requests
-UPPER <text>
-    request: UPPER hello world\n
-    response: OK HELLO WORLD\n
-    example: UPPER hello\n →OK HELLO\n
-    最初の空白の後ろがtext。空白を保存する。
-    text は空でないASCII印字可能文字。a-zのみ大文字へ変換。
-LOWER
-    request: LOWER HELLO WORLD\n
-    response: OK hello world\n
-    example: LOWER HELLO\n → OK hello\n
-    最初の空白の後ろがtext。空白を保存する。
-    text は空でないASCII印字可能文字。A-Zのみ大文字へ変換。
+Protocol
+
+1. Overview
+
+TCP通信を利用した簡易計算サービス。
+
+clientは計算コマンドと2つの整数をserverへ送信する。serverはコマンドを解析し、計算結果をclientへ返す。
+
+2. Connection
+
+- TCP port: 5000
+- 文字コード: UTF-8
+- 1行につき1 request
+- 行末はLF（"\n"）
+- 1 requestに対して1 responseを返す
+- 1接続で複数のrequestを送信できる
+- clientが切断したら接続を終了する
+- 1行の最大長はLFを含めて1023 bytes
+- 上限を超えた場合は接続を終了する
+
+3. Request format
+
+コマンドは大文字のみを使用する。
+
+書式は次のとおり。
+
+"COMMAND <整数1> <整数2>\n"
+
+- コマンドと整数は半角スペース1個で区切る
+- 行の先頭や末尾に余分な空白を入れない
+- 整数は-1000〜1000の範囲
+- 整数は10進数で指定する
+- 負数には先頭に"-"を付ける
+- 正数には"+"を付けない
+- 先頭の余分な0は認めない（ただし"0"は有効）
+
 ADD
-    request: ADD <num1> <num2>\n
-    response: OK <result>\nexample: ADD 5 3\n → OK 8\n
-    指定された2つの数値を加算する。数値は整数。
+
+2つの整数を加算する。
+
+Request:
+
+"ADD 5 3\n"
+
+Response:
+
+"OK 8\n"
+
 SUB
-    request: SUB <num1> <num2>\n
-    response: OK <result>\n
-    example: SUB 10 4\n → OK 6\n
-    指定された2つの数値を減算する（num1 - num2）。数値は整数。
+
+1つ目の整数から2つ目の整数を引く。
+
+Request:
+
+"SUB 10 4\n"
+
+Response:
+
+"OK 6\n"
+
 MUL
-    request: MUL <num1> <num2>\n
-    response: OK <result>\n
-    example: MUL 3 4\n → OK 12\n指定された2つの数値を乗算する。数値は整数。
-## Errors
-UNKNOWN\n-> ERROR unknown-command\n
-UPPER\n-> ERROR invalid-argument\n
-未知commandはunknown-command、引数規則違反はinvalid-argument。
-ERROR を返した後も次のrequestを受け付ける。
+
+2つの整数を乗算する。
+
+Request:
+
+"MUL 3 4\n"
+
+Response:
+
+"OK 12\n"
+
+4. Response format
+
+計算に成功した場合、以下の形式で返す。
+
+"OK <計算結果>\n"
+
+計算結果は符号付き10進整数とし、正数には"+"を付けない。
+
+例：
+
+"ADD -5 3\n" → "OK -2\n"
+
+5. Error response
+
+Unknown command
+
+定義されていないコマンドを受信した場合：
+
+"DIV 10 2\n" → "ERROR unknown-command\n"
+
+小文字のコマンドも未知のコマンドとして扱う。
+
+Invalid argument
+
+引数が不足している、整数ではない、範囲外である、または書式が異なる場合：
+
+"ADD 5\n" → "ERROR invalid-argument\n"
+
+"ADD abc 3\n" → "ERROR invalid-argument\n"
+
+"ADD 2000 3\n" → "ERROR invalid-argument\n"
+
+"ADD 5  3\n" → "ERROR invalid-argument\n"
+
+エラーを返した後も、次のrequestを受け付ける。
+
+6. Implementation status
+
+今回最初に実装する機能：
+
+- ADD（足し算）
+
+今後実装する機能：
+
+- SUB（引き算）
+- MUL（掛け算）
+- 各種エラー処理
+
+この文書は3種類すべての通信仕様を定義するものであり、現時点ですべての機能が実装済みであることを意味しない。

@@ -79,11 +79,11 @@ gcc -o tcp_client client/tcp_client.c
 
 ## メンバー・担当作業
 - **吉田**: clientの実装 ([Issue #2](https://github.com/kento-yosida/q3-group-project/issues/2), [PR #7](https://github.com/kento-yosida/q3-group-project/pull/7),[PR #8](https://github.com/kento-yosida/q3-group-project/pull/8))
-- **榊原**: server実装・テスト ([Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1)[PR #6](https://github.com/kento-yosida/q3-group-project/pull/6))
+- **榊原**: server実装・テスト ([Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1),[PR #6](https://github.com/kento-yosida/q3-group-project/pull/6))
 
 ## 実行結果の記録
 - [動作確認・実行ログ一覧](https://github.com/kento-yosida/q3-group-project/blob/document/docs/test_results.md)
 
 ## 提出情報
 - **提出対象ブランチ**: `main`
-- **コミットID**: ``
+- **コミットID**: `caeb11b`
