@@ -91,6 +91,13 @@ char response[128];
 
 if (sscanf(buf, "ADD %d %d", &a, &b) == 2) {
     snprintf(response, sizeof(response), "OK %d\n", a + b);
+
+} else if (sscanf(buf, "SUB %d %d", &a, &b) == 2) {
+    snprintf(response, sizeof(response), "OK %d\n", a - b);
+
+} else if (sscanf(buf, "MUL %d %d", &a, &b) == 2) {
+    snprintf(response, sizeof(response), "OK %d\n", a * b);    
+
 } else {
     snprintf(response, sizeof(response), "ERROR invalid-argument\n");
 }
