@@ -1,2 +1,89 @@
-# q3-group-project
-q3グループプロジェクト用のリポジトリ
+# 簡易計算サービス (TCP Calc Service)
+
+## 概要
+本サービスは、TCPソケット通信を用いた簡易計算（加算・減算・乗算）サービスです。クライアントから送信された計算リクエストをサーバー側で解析・処理し、結果を返却します。
+
+## 開発メンバー
+- 吉田
+- 榊原
+
+## 実行環境・必要な依存関係
+- **OS**: Ubuntu 22.04 LTS
+- **コンパイラ**: GCC (`gcc`)
+- **依存ライブラリ**: C標準ライブラリ、POSIXソケット API (`sys/socket.h`, `arpa/inet.h` 等)
+
+---
+
+## ビルド方法
+
+プロジェクトのルートディレクトリで以下のコマンドを実行してビルドします。
+
+```bash
+# サーバーのビルド
+gcc -o tcp_server server/tcp_server.c
+
+# クライアントのビルド
+gcc -o tcp_client client/tcp_client.c
+```
+
+---
+
+## サーバーの起動方法
+
+1. ビルド成果物のあるルートディレクトリで以下を実行して起動します。
+   ```bash
+   ./tcp_server
+   ```
+2. **Port**: `5000`（ソースコード内固定）
+3. **引数**: なし
+4. **設定方法**: ポート番号を変更する場合は、`server/tcp_server.c` 内の `htons(5000)` を修正して再ビルドしてください。
+
+---
+
+## クライアントの起動・利用方法
+
+1. 以下のコマンドで接続先IPとポート番号を指定して起動します。
+   ```bash
+   ./tcp_client <接続先IPアドレス> <ポート番号>
+   ```
+   *ローカル環境での実行例:*
+   ```bash
+   ./tcp_client 127.0.0.1 5000
+   ```
+
+2. **送信方法**: 起動後、`client > ` プロンプトに対して計算コマンド（例: `ADD 5 3`）を入力し、Enterキーで送信します。
+3. **終了方法**: `Ctrl + D` を入力するとクライアントが終了します。
+
+---
+
+## リクエスト仕様
+
+1行につき1つのリクエストを送信します（LF終端）。
+
+### 実装済みの Request
+- **ADD（加算）**
+  - リクエスト例: `ADD 5 3\n`
+  - レスポンス例: `OK 8\n`
+
+### 未実装の Request
+- **SUB（減算）**: `SUB <num1> <num2>\n` (仕様定義のみ・未実装)
+- **MUL（乗算）**: `MUL <num1> <num2>\n` (仕様定義のみ・未実装)
+- ※ `UPPER` / `LOWER` はサービス対象外のため非対応です。
+
+---
+
+## 現在分かっている問題
+- サーバーコード (`server/tcp_server.c`) 内で実装されている処理が現在 `ADD` のみとなっており、`SUB` および `MUL` のコマンド処理が未実装です。
+- サーバーのポート番号がハードコードされており、起動時のコマンドライン引数で動的に変更できません。
+- 1つのクライアント接続が終了するとサーバーが終了する実装（または次の接続待ちに移行する際の設定制限）となっているため、複数クライアントからの並列接続や永続稼働に対応していません。
+
+## メンバー・担当作業
+- **吉田**: clientの実装 ([Issue #2](https://github.com/kento-yosida/q3-group-project/issues/2), [PR #7](https://github.com/kento-yosida/q3-group-project/pull/7),[PR #8](https://github.com/kento-yosida/q3-group-project/pull/8))
+- **榊原**: server実装・テスト ([Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1)[PR #6](https://github.com/kento-yosida/q3-group-project/pull/6))
+
+## 実行結果の記録
+- [動作確認・実行ログ一覧](https://github.com/kento-yosida/q3-group-project/blob/document/docs/test_results.md)
+
+## 提出情報
+- **提出対象ブランチ**: `main`
+- **コミットID**: ``
