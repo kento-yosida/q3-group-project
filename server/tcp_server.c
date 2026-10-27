@@ -86,8 +86,6 @@ int main(void)
     while ((n = read_line(client_fd, buf, sizeof(buf))) > 0) {
         printf("client -> %s", buf); fflush(stdout);
         /* ECHO変更箇所: replace the following two lines in class. */
-        int a, b;
-char response[128];
 
 char cmd[32];
 char response[128];
