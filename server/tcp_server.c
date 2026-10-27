@@ -86,20 +86,35 @@ int main(void)
     while ((n = read_line(client_fd, buf, sizeof(buf))) > 0) {
         printf("client -> %s", buf); fflush(stdout);
         /* ECHO変更箇所: replace the following two lines in class. */
-        int a, b;
+
+char cmd[32];
 char response[128];
+int a, b;
 
-if (sscanf(buf, "ADD %d %d", &a, &b) == 2) {
-    snprintf(response, sizeof(response), "OK %d\n", a + b);
-
-} else if (sscanf(buf, "SUB %d %d", &a, &b) == 2) {
-    snprintf(response, sizeof(response), "OK %d\n", a - b);
-
-} else if (sscanf(buf, "MUL %d %d", &a, &b) == 2) {
-    snprintf(response, sizeof(response), "OK %d\n", a * b);    
-
+if (sscanf(buf, "%31s", cmd) != 1) {
+    // 空行や空白のみの場合
+    snprintf(response, sizeof(response), "ERROR unknown-command\n");
+} else if (strcmp(cmd, "ADD") == 0) {
+    if (sscanf(buf, "ADD %d %d", &a, &b) == 2) {
+        snprintf(response, sizeof(response), "OK %d\n", a + b);
+    } else {
+        snprintf(response, sizeof(response), "ERROR invalid-argument\n");
+    }
+} else if (strcmp(cmd, "SUB") == 0) {
+    if (sscanf(buf, "SUB %d %d", &a, &b) == 2) {
+        snprintf(response, sizeof(response), "OK %d\n", a - b);
+    } else {
+        snprintf(response, sizeof(response), "ERROR invalid-argument\n");
+    }
+} else if (strcmp(cmd, "MUL") == 0) {
+    if (sscanf(buf, "MUL %d %d", &a, &b) == 2) {
+        snprintf(response, sizeof(response), "OK %d\n", a * b);
+    } else {
+        snprintf(response, sizeof(response), "ERROR invalid-argument\n");
+    }
 } else {
-    snprintf(response, sizeof(response), "ERROR invalid-argument\n");
+    // 定義されていないコマンド名の場合
+    snprintf(response, sizeof(response), "ERROR unknown-command\n");
 }
 
 if (write_all(client_fd, response, strlen(response)) < 0) break;

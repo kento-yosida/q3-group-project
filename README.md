@@ -60,15 +60,34 @@ gcc -o tcp_client client/tcp_client.c
 
 1行につき1つのリクエストを送信します（LF終端）。
 
+## ncによるテスト方法と接続先・port
+クライアント側 
+nc 127.0.0.1 5000
+## 正常requestの実行例とerror responseの実行例。
+ADD 2 5
+OK 7
+MUL 2 5
+OK 10
+add 
+ERROR unknown-command
+
+ADD 
+ERROR invalid-argument
+## 現在わかっている問題、再現条件、次の対応。
+
 ### 実装済みの Request
 - **ADD（加算）**
   - リクエスト例: `ADD 5 3\n`
   - レスポンス例: `OK 8\n`
+- **SUB（加算）**
+  - リクエスト例: `SUB 5 3\n`
+  - レスポンス例: `OK 2\n`
+- **MUL（加算）**
+  - リクエスト例: `MUL 5 3\n`
+  - レスポンス例: `OK 15\n`
+
 
 ### 未実装の Request
-- **SUB（減算）**: `SUB <num1> <num2>\n` (仕様定義のみ・未実装)
-- **MUL（乗算）**: `MUL <num1> <num2>\n` (仕様定義のみ・未実装)
-- ※ `UPPER` / `LOWER` はサービス対象外のため非対応です。
 
 ---
 
@@ -79,7 +98,7 @@ gcc -o tcp_client client/tcp_client.c
 
 ## メンバー・担当作業
 - **吉田**: clientの実装 ([Issue #2](https://github.com/kento-yosida/q3-group-project/issues/2), [PR #7](https://github.com/kento-yosida/q3-group-project/pull/7),[PR #8](https://github.com/kento-yosida/q3-group-project/pull/8))
-- **榊原**: server実装・テスト ([Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1),[PR #6](https://github.com/kento-yosida/q3-group-project/pull/6))
+- **榊原**: server実装・テスト ([Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1),[PR #6](https://github.com/kento-yosida/q3-group-project/pull/6),[PR #10](https://github.com/kento-yosida/q3-group-project/pull/10))
 
 ## 実行結果の記録
 - [動作確認・実行ログ一覧](https://github.com/kento-yosida/q3-group-project/blob/document/docs/test_results.md)
