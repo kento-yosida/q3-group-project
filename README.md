@@ -1,7 +1,7 @@
 # 簡易計算サービス (TCP Calc Service)
 
 ## 概要
-本サービスは、TCPソケット通信を用いた簡易計算（加算・減算・乗算）サービスです。クライアントから送信された計算リクエストをサーバー側で解析・処理し、結果を返却します。
+本サービスは、TCP ソケット通信を用いた簡易計算（加算・減算・乗算）サービスです。クライアントから送信された計算リクエストをサーバー側で解析・処理し、結果を返却します。
 
 ## 開発メンバー
 - 吉田
@@ -9,104 +9,131 @@
 
 ## 実行環境・必要な依存関係
 - **OS**: Ubuntu 22.04 LTS
-- **コンパイラ**: GCC (`gcc`)
-- **依存ライブラリ**: C標準ライブラリ、POSIXソケット API (`sys/socket.h`, `arpa/inet.h` 等)
+- **コンパイラ**: GCC (`gcc`)、`make`
+- **依存ライブラリ**: C 標準ライブラリ、POSIX スレッド（`pthread`）、POSIX ソケット API (`sys/socket.h`, `arpa/inet.h` 等)
+
+---
+
+## 配置・パス・権限・永続化
+- **配置場所**: リポジトリのルートディレクトリを基準にソース・`Makefile`・ドキュメントを配置します。
+- **相対パスの基準**: ビルドおよび実行コマンドは、原則として**プロジェクトのルートディレクトリ**をカレントディレクトリとして実行します。
+- **必要な権限・書き込み先**: 実行ファイルの生成および起動に `root` 権限は不要です（通常ユーザーで実行可能）。ログファイル等を出力しない構成の場合、特別な書き込み権限は必要ありません。
+- **再起動後に残る状態**: 状態をファイル等に保存しない仕様のため、サーバー再起動後に残る状態はありません。
 
 ---
 
 ## ビルド方法
 
-プロジェクトのルートディレクトリで以下のコマンドを実行してビルドします。
+**実行ディレクトリ**: プロジェクトのルートディレクトリ
+
+`Makefile` を用いて実行ファイルを生成します。
 
 ```bash
-# サーバーのビルド
-gcc -pthread server/server.c -o server
-
-# クライアントのビルド
-gcc -o tcp_client client/tcp_client.c
+make
 ```
+
+**期待する応答・結果**:
+- エラーなく完了し、ルートディレクトリに実行ファイル `tcp_server` および `tcp_client` が生成されます。
+- ビルド生成物を削除する場合は `make clean` を実行します。
 
 ---
 
-## サーバーの起動方法
+## サーバーの起動・設定・停止方法
 
-1. ビルド成果物のあるルートディレクトリで以下を実行して起動します。
-   ```bash
-   ./tcp_server
-   ```
-2. **Port**: `5000`（ソースコード内固定）
-3. **引数**: なし
-4. **設定方法**: ポート番号を変更する場合は、`server/tcp_server.c` 内の `htons(5000)` を修正して再ビルドしてください。
+### 起動方法とポート設定
+**実行ディレクトリ**: プロジェクトのルートディレクトリ
+
+```bash
+./tcp_server [ポート番号]
+```
+
+- **接続指定**: ポート番号を省略した場合は既定値 `5000` で動作します。起動時に引数として指定することも可能です（例: `./tcp_server 8080`）。
+- **待受アドレス**: `0.0.0.0`（全 IPv4 インタフェースで接続を要求待機）[要確認: 127.0.0.1 のみか 0.0.0.0 か実処理に合わせ調整]
+
+**期待する応答**:
+- 起動成功時、標準出力に待受開始ログが表示され、接続待機状態になります。
+  ```text
+  Server listening on port 5000...
+  ```
+
+### 停止方法
+- フォアグラウンド起動中は `Ctrl + C` を入力して終了します。
+- バックグラウンドで動作させている場合は、`kill <PID>` コマンド等でプロセスを終了させます。
 
 ---
 
 ## クライアントの起動・利用方法
 
-1. 以下のコマンドで接続先IPとポート番号を指定して起動します。
-   ```bash
-   ./tcp_client <接続先IPアドレス> <ポート番号>
-   ```
-   *ローカル環境での実行例:*
-   ```bash
-   ./tcp_client 127.0.0.1 5000
-   ```
+**実行ディレクトリ**: プロジェクトのルートディレクトリ
 
-2. **送信方法**: 起動後、`client > ` プロンプトに対して計算コマンド（例: `ADD 5 3`）を入力し、Enterキーで送信します。
-3. **終了方法**: `Ctrl + D` を入力するとクライアントが終了します。
+```bash
+./tcp_client <接続先IPアドレス> <ポート番号>
+```
+
+**ローカル環境での実行例**:
+```bash
+./tcp_client 127.0.0.1 5000
+```
+
+**期待する応答・操作**:
+- サーバー接続成功後、`client > ` プロンプトが表示されます。
+- コマンド（例: `ADD 5 3`）を入力して `Enter` で送信すると、処理結果が表示されます。
+- **終了方法**: `Ctrl + D` (EOF) を入力してクライアントを終了させます。
 
 ---
 
-## リクエスト仕様
+## リクエスト・応答仕様
 
-1行につき1つのリクエストを送信します（LF終端）。
+要求および応答の詳細仕様については `protocol.md` もあわせて参照してください。
 
-## ncによるテスト方法と接続先・port
-クライアント側 
+- **行末コード**: 各リクエストおよびレスポンスは `LF` (`\n`) で区切られます。
+- **主要コマンド**:
+  - `ADD <a> <b>\n`（加算）→ レスポンス: `OK <結果>\n`
+  - `SUB <a> <b>\n`（減算）→ レスポンス: `OK <結果>\n`
+  - `MUL <a> <b>\n`（乗算）→ レスポンス: `OK <結果>\n`
+
+### `nc` (netcat) によるテスト・接続例
+
+```bash
 nc 127.0.0.1 5000
-## 正常requestの実行例とerror responseの実行例。
+```
+
+**通信例（正常系・異常系）**:
+```text
 ADD 2 5
 OK 7
 MUL 2 5
 OK 10
-add 
+add
 ERROR unknown-command
-
-ADD 
+ADD
 ERROR invalid-argument
-## 現在わかっている問題、再現条件、次の対応。
-
-### 実装済みの Request
-- **ADD（加算）**
-  - リクエスト例: `ADD 5 3\n`
-  - レスポンス例: `OK 8\n`
-- **SUB（加算）**
-  - リクエスト例: `SUB 5 3\n`
-  - レスポンス例: `OK 2\n`
-- **MUL（加算）**
-  - リクエスト例: `MUL 5 3\n`
-  - レスポンス例: `OK 15\n`
-
-
-### 未実装の Request
+```
 
 ---
 
 ## 並行化方式：選んだ方式と理由
-pthread関数を使用する。
-理由:forkよりも新しい方式であり、実装も簡単なため。
+- **採用方式**: `pthread` (マルチスレッド化)
+- **理由**: プロセス生成 (`fork`) と比較して軽量であり、スレッド間でのリソース共有や接続管理が容易なため。
 
-## 現在分かっている問題
-- サーバーコード (`server/tcp_server.c`) 内で実装されている処理が現在 `ADD` のみとなっており、`SUB` および `MUL` のコマンド処理が未実装です。
-- サーバーのポート番号がハードコードされており、起動時のコマンドライン引数で動的に変更できません。
-- 1つのクライアント接続が終了するとサーバーが終了する実装（または次の接続待ちに移行する際の設定制限）となっているため、複数クライアントからの並列接続や永続稼働に対応していません。
+---
+
+## 既知の制限・注意点
+- [要確認: 現状のコードにおける制限事項（例: 巨大数字による整数オーバーフロー未検知など）を記載してください]
+
+---
 
 ## メンバー・担当作業
-- **吉田**: clientの実装 ([Issue #2](https://github.com/kento-yosida/q3-group-project/issues/2), [PR #7](https://github.com/kento-yosida/q3-group-project/pull/7),[PR #8](https://github.com/kento-yosida/q3-group-project/pull/8),[PR #8]([PR #11](https://github.com/kento-yosida/q3-group-project/pull/11))
-- **榊原**: server実装・テスト ([Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1),[PR #6](https://github.com/kento-yosida/q3-group-project/pull/6),[PR #10](https://github.com/kento-yosida/q3-group-project/pull/10),[PR #12](https://github.com/kento-yosida/q3-group-project/pull/12))
+- **吉田**: client の実装・テスト（[Issue #2](https://github.com/kento-yosida/q3-group-project/issues/2), [PR #7](https://github.com/kento-yosida/q3-group-project/pull/7), [PR #8](https://github.com/kento-yosida/q3-group-project/pull/8), [PR #11](https://github.com/kento-yosida/q3-group-project/pull/11)）
+- **榊原**: server 実装・テスト（[Issue #1](https://github.com/kento-yosida/q3-group-project/issues/1), [Issue #3](https://github.com/kento-yosida/q3-group-project/issues/3), [PR #6](https://github.com/kento-yosida/q3-group-project/pull/6), [PR #10](https://github.com/kento-yosida/q3-group-project/pull/10), [PR #12](https://github.com/kento-yosida/q3-group-project/pull/12)）
 
-## 実行結果の記録
-- [動作確認・実行ログ一覧](https://github.com/kento-yosida/q3-group-project/blob/document/docs/test_results.md)
+---
+
+## テスト・検証記録
+- 詳細な検証結果およびテスト実行結果のログについては `tests.md` を参照してください。
+
+---
 
 ## 提出情報
 - **提出対象ブランチ**: `main`
-- **コミットID**: `caeb11b`
+- **提出タグ**: `q3-final`

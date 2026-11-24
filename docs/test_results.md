@@ -1,6 +1,6 @@
 実行環境: ubuntu22.04
 実行結果:
-
+    
 クライアント側
 nanzan@nanzan-VirtualBox:~$ ./client 127.0.0.0 5000
 connected; type a short line, Enter to send, Ctrl+D to quit
